@@ -1,4 +1,6 @@
-## Tmate debugging
+## Tmate Workflow
+Fork the repo into your account then
+
 Generate and add an SSH key to GitHub using the command line. This setup is required to use `limit-access-to-actor: true` in your GitHub Actions tmate session.
 
 <br>
