@@ -1,0 +1,22 @@
+name: Tmate Debug Session (India Optimized)
+
+on:
+  # Allows you to run this workflow manually from the "Actions" tab
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Tmate Session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          # FOR INDIA: Force the Singapore server for low latency
+          tmate-server-host: "sg1.tmate.io"
+          
+          # Optional: Limit access to only you (highly recommended for security)
+          limit-access-to-actor: true
+          
