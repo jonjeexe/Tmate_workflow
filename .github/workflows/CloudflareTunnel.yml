@@ -6,6 +6,7 @@ on:
 jobs:
   debug:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -20,30 +21,28 @@ jobs:
           sudo rm -rf /usr/local/.ghcup
           sudo rm -rf /usr/share/swift
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          df -h  # Show how much space you freed
-          
+          df -h
+
       - name: Setup SSH Access (limit to actor only)
         run: |
           mkdir -p ~/.ssh
-          # Only fetch SSH keys of the person who triggered the workflow
           curl -s https://github.com/${{ github.actor }}.keys >> ~/.ssh/authorized_keys
           chmod 700 ~/.ssh
           chmod 600 ~/.ssh/authorized_keys
           echo "SSH keys added for: ${{ github.actor }}"
 
-      - name: Install Cloudflared
+      - name: Install Cloudflared & Tmux
         run: |
           curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
           chmod +x ./cloudflared
           sudo mv ./cloudflared /usr/local/bin/cloudflared
           cloudflared --version
+          sudo apt-get install -y tmux
 
       - name: Start Cloudflare Tunnel & Print SSH Command
         run: |
-          # Start tunnel in background and log output
           cloudflared tunnel --url tcp://localhost:22 > /tmp/cf.log 2>&1 &
 
-          # Wait for tunnel to be ready
           echo "Waiting for tunnel..."
           for i in $(seq 1 15); do
             CF_URL=$(grep -o 'https://.*\.trycloudflare\.com' /tmp/cf.log | head -1)
@@ -66,12 +65,16 @@ jobs:
           echo "  pkg install cloudflared"
           echo ""
           echo "STEP 2 - Connect via SSH:"
-          echo "  ssh -o ProxyCommand='cloudflared access tcp --hostname ${CF_URL}' runner@localhost"
+          echo "  ssh -o StrictHostKeyChecking=no -o ProxyCommand='cloudflared access tcp --hostname ${CF_URL}' runner@localhost"
+          echo ""
+          echo "STEP 3 - IMPORTANT! Start tmux first:"
+          echo "  tmux new -s main"
+          echo ""
+          echo "  If reconnecting after disconnect:"
+          echo "  tmux attach -t main"
           echo ""
           echo "Tunnel URL: ${CF_URL}"
           echo "Triggered by: ${{ github.actor }}"
           echo "============================================"
 
-          # Keep session alive for 6 hours
           sleep 21600
-          
